@@ -17,20 +17,20 @@ class encrypt:
         # we will break our hash key into 5 parts, and use them as seed!
         self.seeds = {
             # key is stored as hex, and not int 
-            "rv" : int(self.key[:12], 16),
-            "ps" : int(self.key[12:25], 16),
-            "br" : int(self.key[25:38], 16),
-            "xor" : int(self.key[38:51], 16),
-            "lm" : int(self.key[51:], 16)
+            "rv" : int(self.key[:25], 16),
+            "ps" : int(self.key[25:50], 16),
+            "br" : int(self.key[50:75], 16),
+            "xor" : int(self.key[75:100], 16),
+            "lm" : int(self.key[100:], 16)
         }
 
     # encryption functions which will use seed
     def randomVigenere(self):
-        random.seed(self.seeds["rv"])
+        rng = random.Random(self.seeds["rv"])
 
         # creating random vigenere matrix
         alphabets = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
-        vigenereMatrix = tuple( tuple(random.sample(alphabets, 26)) for i in range(26))
+        vigenereMatrix = tuple( tuple(rng.sample(alphabets, 26)) for i in range(26))
 
         encryptedText = []
         for _ in range(len(self.text)):
@@ -63,8 +63,8 @@ class encrypt:
         
     def bitRotation(self):
         #seed for rotation and then creating rotational values
-        random.seed(self.seeds["br"])
-        rotations = [random.randint(0, 7) for i in range(len(self.text))]
+        rng = random.Random(self.seeds["br"])
+        rotations = [rng.randint(0, 7) for i in range(len(self.text))]
         
         # since we working on byte levels, we must convert it to bytes 
         tempText = self.text.encode() # now string is like 97982913131...
@@ -78,8 +78,8 @@ class encrypt:
 
     def XOR(self):
         # creating values for XORing using 4th part of the key
-        random.seed(int(self.key[38:51], 16))
-        XORkey = [random.randint(0, 255) for i in range(len(self.text))]
+        rng = random.Random(self.seeds["xor"])
+        XORkey = [rng.randint(0, 255) for i in range(len(self.text))]
 
         tempText = self.text.encode()
         encryptedText = bytearray()
@@ -91,11 +91,10 @@ class encrypt:
         self.text = encryptedText.hex()
 
     def logisticMap(self):
-        # since int part would be large, dividing it with 16^13 will make seed to lie between 0 and 1 which is core of logistic map 
-        seed = self.seeds["lm"] / (16 ** 13)
-
-        x = seed if 0 < seed < 1 else 0.69
-        r = 0.3999
+        # since int part would be large, dividing it with 16**len(seed) will make seed to lie between 0 and 1 which is core of logistic map 
+        seed = self.seeds["lm"] / (16 ** 28)
+        x = seed if 0 < seed < 1 else 0.7
+        r = 3.999
         
         encryptedText = bytearray()
         tempText = self.text.encode()
@@ -108,18 +107,81 @@ class encrypt:
         self.text = encryptedText.hex()
 
 
+    #function which will be presented to user!
+    def encryption(self):
+        charEn = (1,2)
+        bitEn = (3,4)
+        
+        order = tuple(random.sample(charEn, 2) + random.sample(bitEn, 2)) + (5,)
+        
+        for i in order:
+            if i == 1: self.randomVigenere()
+            elif i == 2: self.progressiveShift()
+            elif i == 3: self.bitRotation()
+            elif i == 4: self.XOR()
+            elif i == 5: self.logisticMap()
+        
+
+        with open("secrets.csv", "a", newline="\n") as encrypting:
+            writer = csv.writer(encrypting)
+            writer.writerow([self.text, self.salt.hex(), order])
+
+    
+    encryptedText = lambda self: self.text
+
+
+class decrypt:
+    def __init__(self, text, password):
+        self.text = text
+        self.password = password
+        
+        with open("secrets.csv", "r") as decrypting:
+            reader = csv.reader(decrypting)
+            
+            for row in reader:
+                if row[0] == self.text: 
+                    self.salt = bytes.fromhex(row[1]) #since it is stored as hex!
+                    self.order = [i for i in row[2][1:-1] if i.isdigit()] # restoring order as list!
+            
+
+        # creating hash key
+        self.key = pbkdf("sha-512", password.encode() , self.salt, 100000).hex()
+        self.seeds = {
+            # key is stored as hex, and not int 
+            "rv" : int(self.key[:25], 16),
+            "ps" : int(self.key[25:50], 16),
+            "br" : int(self.key[50:75], 16),
+            "xor" : int(self.key[75:100], 16),
+            "lm" : int(self.key[100:], 16)
+        }
+
+
+pass
+
 
 
 
 def main():
-    text = "hi"
-    secret = encrypt(text, text)
-    # secret = encrypt((text:=input()), password:=input())
-    # print(secret.key)
-    secret.XOR()
-    secret.logisticMap()
-    secret.bitRotation()
-    secret.randomVigenere()
-    print(secret.text)
+    print("Would you like to Encrypt or Decrypt?","\nPress E for encrypting, D for decrypting, X for Exiting!")
+    while True:
+        c = input()
+        if c.upper() == "E":
+            print("Enter the text you wish to encrypt: ")
+            text = input()
+            print("Enter password for encrpytion: ")
+            password = input()
+            
+            cyphered = encrypt(text, password)
+            cyphered.encryption()
+            print(f"Your encrypted text is {cyphered.encryptedText()}")
+            pass 
+        elif c.upper() == "D":
+            pass
+        elif c.upper() == "X":
+            print("Exiting!")
+            break
+            pass
+        else : print("Invalid. Retry!")
+    
 
 main()
