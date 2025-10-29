@@ -150,6 +150,7 @@ class decrypt:
             "lm" : int(self.key[100:], 16)
         }
 
+    #inverse functions 
     def invLogisticMap(self):
         seed = self.seeds["lm"] / (16 ** 28)
         x = seed if 0 < seed < 1 else 0.7
@@ -233,6 +234,8 @@ class decrypt:
             elif i == 3: self.invBitRotation()
             elif i == 4: self.invXOR()
             elif i == 5: self.invLogisticMap()
+    
+    decryptedText = lambda self: self.text
 
 
 
@@ -240,40 +243,36 @@ class decrypt:
 
 
 
-# def main():
-#     print("Would you like to Encrypt or Decrypt?","\nPress E for encrypting, D for decrypting, X for Exiting!")
-#     while True:
-#         c = input()
-#         if c.upper() == "E":
-#             print("Enter the text you wish to encrypt: ")
-#             text = input()
-#             print("Enter password for encrpytion: ")
-#             password = input()
+def main():
+    print("Would you like to Encrypt or Decrypt?","\nPress E for encrypting, D for decrypting, X for Exiting!")
+    while True:
+        c = input()
+        if c.upper() == "E":
+            print("Enter the text you wish to encrypt: ")
+            text = input()
+            print("Enter password for encrpytion: ")
+            password = input()
             
-#             cyphered = encrypt(text, password)
-#             cyphered.encryption()
-#             print(f"Your encrypted text is {cyphered.encryptedText()}")
-#             pass 
-#         elif c.upper() == "D":
-#             pass
-#         elif c.upper() == "X":
-#             print("Exiting!")
-#             break
-#             pass
-#         else : print("Invalid. Retry!")
+            cyphered = encrypt(text, password)
+            cyphered.encryption()
+            print(f"Your encrypted text is {cyphered.encryptedText()}")
+            pass 
+        elif c.upper() == "D":
+            print("Enter the text you wish to decrypt: ")
+            cipher = input()
+            print("Enter password for decrpytion: ")
+            password = input()
+            
+            decyphered = decrypt(cipher, password)
+            decyphered.decryption()
+            print(f"Your decrypted text is {decyphered.decryptedText()}")
+        elif c.upper() == "X":
+            print("Exiting!")
+            break
+            pass
+        else : print("Invalid. Retry!")
     
 
-# main()
-n = 0
-if n == 1:
-    for words in ["hmmmm", "is", "this", "working"]:
-        secrets = encrypt(words, "hi")
-        secrets.encryption()
-else : 
-    with open("secrets.csv", "r") as file:
-        reader = csv.reader(file)
-        for row in reader:
-            unsecrets = decrypt(row[0], "hi")
-            unsecrets.decryption()
-            print(unsecrets.text)
+main()
+
 
