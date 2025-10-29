@@ -25,23 +25,15 @@ class encrypt:
         }
 
     # encryption functions which will use seed
-    def randomVigenere(self):
+    def tupleRotation(self):
         rng = random.Random(self.seeds["rv"])
-
-        # creating random vigenere matrix
-        alphabets = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
-        vigenereMatrix = tuple( tuple(rng.sample(alphabets, 26)) for i in range(26))
-
-        encryptedText = []
-        for _ in range(len(self.text)):
-            # i here points towards column aka normal text char
-            i = ord(self.text[_].upper()) - ord("A")
-            #  j here points towards row aka password key stream!
-            j = ord(self.password[_ % len(self.password) ].upper()) - ord("A")
-
-            char = vigenereMatrix[i][j] if self.text[_] == self.text[_].upper() else vigenereMatrix[i][j].lower()
-            encryptedText.append(char)
-
+        
+        # convert text to tuple of characters and positions 
+        char = tuple(self.text)
+        size = len(char)
+        pos = tuple(rng.sample(range(size), size))
+        #scrambling positions 
+        encryptedText = [char[i] for i in pos]        
         self.text = "".join(encryptedText)
 
     def progressiveShift(self):
@@ -49,7 +41,7 @@ class encrypt:
 
         # we will shift first character by firstShift amount, then rest of the letters will be shifted using prevShift amount + chainFactor 
         chainFactor = (shift >> 8) % 256
-
+        
         encryptedText = []
         for char in self.text:
             base = ord("A") if char == char.upper() else ord("a")
@@ -64,7 +56,7 @@ class encrypt:
     def bitRotation(self):
         #seed for rotation and then creating rotational values
         rng = random.Random(self.seeds["br"])
-        rotations = [rng.randint(0, 7) for i in range(len(self.text))]
+        rotations = [rng.randint(0, 7) for i in range(len(self.text.encode()))]
         
         # since we working on byte levels, we must convert it to bytes 
         tempText = self.text.encode() # now string is like 97982913131...
@@ -79,7 +71,7 @@ class encrypt:
     def XOR(self):
         # creating values for XORing using 4th part of the key
         rng = random.Random(self.seeds["xor"])
-        XORkey = [rng.randint(0, 255) for i in range(len(self.text))]
+        XORkey = [rng.randint(0, 255) for i in range(len(self.text.encode()))]
 
         tempText = self.text.encode()
         encryptedText = bytearray()
@@ -112,7 +104,7 @@ class encrypt:
         order = tuple(random.sample(charEn, 2) + random.sample(bitEn, 2)) + (5,)
         
         for i in order:
-            if i == 1: self.randomVigenere()
+            if i == 1: self.tupleRotation()
             elif i == 2: self.progressiveShift()
             elif i == 3: self.bitRotation()
             elif i == 4: self.XOR()
@@ -175,10 +167,10 @@ class decrypt:
     def invXOR(self):
         # recreating values for XORing using 4th part of the key
         rng = random.Random(self.seeds["xor"])
-        XORkey = [rng.randint(0, 255) for i in range(len(self.text))]
 
         #since it would be hex
         tempText = bytes.fromhex(self.text)
+        XORkey = [rng.randint(0, 255) for i in range(len(tempText))]
         decryptedText = bytearray()
 
         #xoring text and values
@@ -190,9 +182,9 @@ class decrypt:
     def invBitRotation(self):
         #seed for rotation and then creating rotational values
         rng = random.Random(self.seeds["br"])
-        rotations = [rng.randint(0, 7) for i in range(len(self.text))]
         
         tempText = bytes.fromhex(self.text) # now string is like 97982913131...
+        rotations = [rng.randint(0, 7) for i in range(len(tempText))]
         decryptedText = bytearray()
 
         # rotating bits in circular manner  
@@ -218,32 +210,25 @@ class decrypt:
 
         self.text = "".join(decryptedText)
     
-    def invRandomVigenere(self):
+    def invTupleRotation(self):
         rng = random.Random(self.seeds["rv"])
-
-        # recreating random vigenere matrix
-        alphabets = ('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z')
-        vigenereMatrix = tuple( tuple(rng.sample(alphabets, 26)) for i in range(26))
-
-        decryptedText = []
-        for _ in range(len(self.text)):
-            # encrypted character
-            c = self.text[_]
-            #  j here points towards row aka password key stream!
-            j = ord(self.password[_ % len(self.password) ].upper()) - ord("A")
-
-            for r in range(26):
-                if vigenereMatrix[r][j] == c.upper():
-                    base = ord("A") if c.isupper() else ord("a")
-                    decryptedText.append(chr(r + base))
-                    break
-                    
         
+        # convert text to tuple of characters and recreating random positions
+        char = tuple(self.text)
+        size = len(char)
+        pos = tuple(rng.sample(range(size), size))
+
+        decryptedText = [None] * size
+        #fixing positions 
+        for i in range(size):
+            decryptedText[pos[i]] = char[i] 
+
         self.text = "".join(decryptedText)
 
+    #decrypting functions
     def decryption(self):
         for i in reversed(self.order):
-            if i == 1: self.invRandomVigenere()
+            if i == 1: self.invTupleRotation()
             elif i == 2: self.invProgressiveShift()
             elif i == 3: self.invBitRotation()
             elif i == 4: self.invXOR()
@@ -279,13 +264,16 @@ class decrypt:
     
 
 # main()
+n = 0
+if n == 1:
+    for words in ["hmmmm", "is", "this", "working"]:
+        secrets = encrypt(words, "hi")
+        secrets.encryption()
+else : 
+    with open("secrets.csv", "r") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            unsecrets = decrypt(row[0], "hi")
+            unsecrets.decryption()
+            print(unsecrets.text)
 
-# secrets = encrypt("hmmmmm", "hi")
-# secrets.encryption()
-# print(secrets.encryptedText())
-with open("secrets.csv", "r") as file:
-    reader = csv.reader(file)
-    for row in reader:
-        unsecrets = decrypt(row[0], "hi")
-        unsecrets.decryption()
-        print(unsecrets.text)
