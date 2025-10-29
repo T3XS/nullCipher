@@ -25,7 +25,7 @@ class encrypt:
         }
 
     # encryption functions which will use seed
-    def tupleRotation(self):
+    def positionScramble(self):
         rng = random.Random(self.seeds["rv"])
         
         # convert text to tuple of characters and positions 
@@ -104,7 +104,7 @@ class encrypt:
         order = tuple(random.sample(charEn, 2) + random.sample(bitEn, 2)) + (5,)
         
         for i in order:
-            if i == 1: self.tupleRotation()
+            if i == 1: self.positionScramble()
             elif i == 2: self.progressiveShift()
             elif i == 3: self.bitRotation()
             elif i == 4: self.XOR()
@@ -210,7 +210,7 @@ class decrypt:
 
         self.text = "".join(decryptedText)
     
-    def invTupleRotation(self):
+    def invPositionScramble(self):
         rng = random.Random(self.seeds["rv"])
         
         # convert text to tuple of characters and recreating random positions
@@ -228,7 +228,7 @@ class decrypt:
     #decrypting functions
     def decryption(self):
         for i in reversed(self.order):
-            if i == 1: self.invTupleRotation()
+            if i == 1: self.invPositionScramble()
             elif i == 2: self.invProgressiveShift()
             elif i == 3: self.invBitRotation()
             elif i == 4: self.invXOR()
