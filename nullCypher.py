@@ -136,8 +136,9 @@ class decrypt:
                     # since else would be executed if for loop ran normally, which means we have to disrupt for loop the moment it found key
                     break 
             else: 
+                self.text = text.encode().hex()
                 self.salt = os.urandom(16) if useOs else random.randbytes(16)
-                self.order = [5,4,3,2,1]   
+                self.order = []   
 
         # creating hash key
         self.key = pbkdf("sha-512", password.encode() , self.salt, 100000).hex()
@@ -228,13 +229,18 @@ class decrypt:
 
     #decrypting functions
     def decryption(self):
+        if self.order == []: 
+            self.text = random.randbytes(len(self.text)).decode(errors="ignore").lower() 
+            return
+
         for i in reversed(self.order):
             if i == 1: self.invPositionScramble()
             elif i == 2: self.invProgressiveShift()
             elif i == 3: self.invBitRotation()
             elif i == 4: self.invXOR()
             elif i == 5: self.invLogisticMap()
-    
+        
+
     decryptedText = lambda self: self.text
 
 
